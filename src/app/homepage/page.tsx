@@ -28,7 +28,7 @@ export default function HomePage() {
             setCrawlingStatus("Crawling website content...");
 
             // TODO: Replace with your actual API endpoint
-            const response = await fetch('/api/crawl', {
+            const response = await fetch('http://localhost:8000', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -91,17 +91,6 @@ export default function HomePage() {
                                                 className="w-full h-auto rounded-2xl"
                                             >
                                                 <source src="/crab walk.webm" type="video/webm" />
-                                                {/* Fallback animation */}
-                                                <div className="w-full h-64 bg-gradient-to-br rounded-2xl flex items-center justify-center">
-                                                    <div className="text-center">
-                                                        <Bot className="w-20 h-20 text-purple-400 mx-auto mb-4 animate-bounce" />
-                                                        <div className="flex space-x-1 justify-center">
-                                                            <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                                                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-75"></div>
-                                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse delay-150"></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
                                             </video>
                                         </div>
                                     </div>
