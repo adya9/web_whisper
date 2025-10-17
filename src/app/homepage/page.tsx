@@ -27,8 +27,8 @@ export default function HomePage() {
             // Start crawling process
             setCrawlingStatus("Crawling website content...");
 
-            // TODO: Replace with your actual API endpoint
-            const response = await fetch('http://localhost:8000', {
+            // Use Next.js API route to avoid CORS issues
+            const response = await fetch('/api/crawl', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -36,14 +36,16 @@ export default function HomePage() {
                 body: JSON.stringify({ url }),
             });
 
+            console.log('response', response)
+
             if (response.ok) {
                 const data = await response.json();
                 setCrawlingStatus("Analysis complete! Redirecting...");
 
                 // Redirect to chatbox with crawled data
-                setTimeout(() => {
-                    location.href = `/chatbox?url=${encodeURIComponent(url)}&data=${encodeURIComponent(JSON.stringify(data))}`;
-                }, 1000);
+                // setTimeout(() => {
+                //     location.href = `/chatbox`;
+                // }, 1000);
             } else {
                 throw new Error('Failed to crawl website');
             }
