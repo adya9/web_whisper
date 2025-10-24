@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchSimilarContent } from '@/lib/database-simple';
+import { searchSimilarContent } from '@/lib/database-chroma';
 import { createQueryEmbedding } from '@/lib/embeddings';
 import { answerQuestion, generateVoiceResponse } from '@/lib/llm';
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchSimilarContent } from '@/lib/database-simple';
+import { searchSimilarContent } from '@/lib/database-chroma';
 import { createQueryEmbedding } from '@/lib/embeddings';
 
 export async function POST(request: NextRequest) {

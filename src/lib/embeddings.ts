@@ -4,7 +4,7 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 // Initialize Google Gemini embeddings
 const embeddings = new GoogleGenerativeAIEmbeddings({
   apiKey: process.env.GOOGLE_API_KEY,
-  model: 'text-embedding-004', // Latest Gemini embedding model
+  model: 'text-embedding-004', // This model should work with v1beta
 });
 
 // Initialize text splitter with LangChain

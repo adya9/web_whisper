@@ -40,12 +40,19 @@ export default function HomePage() {
 
             if (response.ok) {
                 const data = await response.json();
-                setCrawlingStatus("Analysis complete! Redirecting...");
+                console.log('Crawl API response:', data);
+                
+                // Check if the crawl was successful
+                if (data.success && data.stored) {
+                    setCrawlingStatus(`Analysis complete! Stored ${data.chunksStored || 0} content chunks. Redirecting...`);
+                } else {
+                    setCrawlingStatus("Analysis complete! Redirecting...");
+                }
 
                 // Redirect to chatbox with crawled data
-                // setTimeout(() => {
-                //     location.href = `/chatbox`;
-                // }, 1000);
+                setTimeout(() => {
+                    window.location.href = `/chatbox`;
+                }, 1500);
             } else {
                 throw new Error('Failed to crawl website');
             }
@@ -53,7 +60,7 @@ export default function HomePage() {
         } catch (error) {
             console.error('Error:', error);
             alert("Failed to analyze website. Please check the URL and try again.");
-            setIsLoading(true);
+            setIsLoading(false);
             setCrawlingStatus("");
         }
     };

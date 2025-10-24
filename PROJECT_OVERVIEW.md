@@ -40,12 +40,11 @@ This project creates a voice-enabled AI assistant that can have conversations ab
 ### **AI & Database**
 - `src/lib/embeddings.ts` - Google Gemini embeddings with LangChain
 - `src/lib/llm.ts` - Google Gemini LLM for content analysis
-- `src/lib/database-simple.ts` - PostgreSQL operations (without pgvector)
-- `src/lib/database.ts` - PostgreSQL operations (with pgvector - not used yet)
+- `src/lib/database-chroma.ts` - ChromaDB operations for vector storage
 
 ### **Configuration**
-- `.env` - Environment variables (DB, API keys)
-- `scripts/setup-database-simple.js` - Database setup script
+- `.env` - Environment variables (ChromaDB, API keys)
+- `CHROMADB_SETUP.md` - ChromaDB setup guide
 
 ## 🔧 Current Status
 
@@ -98,24 +97,25 @@ curl http://localhost:3000/api/test-db
 # Your crawl service
 CRAWL_SERVICE_URL=http://localhost:8000
 
-# Database
-DATABASE_URL=postgresql://postgres:password@localhost:5432/webwhisper
+# ChromaDB
+CHROMA_URL=http://localhost:8000
 
 # AI Services
 GOOGLE_API_KEY=your-google-api-key
 OPENAI_API_KEY=your-openai-api-key (fallback)
 
-# Vapi (Voice)
-apiKey=your-vapi-api-key
-assistantId=your-vapi-assistant-id
+# Vapi (Voice) - Client-side variables
+NEXT_PUBLIC_VAPI_API_KEY=your-vapi-api-key
+NEXT_PUBLIC_VAPI_ASSISTANT_ID=your-vapi-assistant-id
 ```
 
 ## 🚀 **How to Test Right Now**
 
-1. Start your crawl service: `http://localhost:8000`
-2. Start Next.js: `npm run dev`
-3. Test debug endpoint: `/api/debug-crawl`
-4. Test simple storage: `/api/crawl-simple`
-5. Check database: `/api/test-db`
+1. Start ChromaDB server: `docker run -p 8000:8000 chromadb/chroma`
+2. Start your crawl service: `http://localhost:8000`
+3. Start Next.js: `npm run dev`
+4. Test debug endpoint: `/api/debug-crawl`
+5. Test simple storage: `/api/crawl-simple`
+6. Check ChromaDB: `/api/test-db`
 
 This will help us identify exactly where the issue is in the pipeline!

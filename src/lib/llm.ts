@@ -5,7 +5,7 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 // Initialize Google Gemini LLM
 const llm = new ChatGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_API_KEY,
-  model: 'gemini-1.5-pro', // Latest Gemini model
+  model: 'gemini-2.5-flash', // Use gemini-1.5-flash which is available in v1beta
   temperature: 0.7,
   maxOutputTokens: 2048,
 });

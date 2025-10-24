@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeDatabase, storeWebsiteData } from '@/lib/database-simple';
+import { initializeDatabase, storeWebsiteData } from '@/lib/database-chroma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,8 +29,16 @@ export async function POST(request: NextRequest) {
       throw new Error(`Crawl service responded with status: ${response.status}`);
     }
 
-    const crawledData = await response.json();
-    console.log('📊 Received crawled data:', {
+    const crawledResponse = await response.json();
+    console.log('📊 Received crawled response:', {
+      success: crawledResponse.success,
+      hasData: !!crawledResponse.data,
+      keys: Object.keys(crawledResponse)
+    });
+
+    // Extract the actual crawled data from the response
+    const crawledData = crawledResponse.data || crawledResponse;
+    console.log('📊 Extracted crawled data:', {
       hasContent: !!crawledData.content,
       contentLength: crawledData.content?.length || 0,
       title: crawledData.title

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeDatabase, storeWebsiteData } from '@/lib/database-simple';
+import { initializeDatabase, storeWebsiteData } from '@/lib/database-chroma';
 import { processContentForEmbeddings } from '@/lib/embeddings';
 import { extractKeyInfo, summarizeContent } from '@/lib/llm';
 
@@ -28,8 +28,16 @@ export async function POST(request: NextRequest) {
             throw new Error(`Backend server responded with status: ${response.status}`);
         }
 
-        const crawledData = await response.json();
-        console.log('Crawled data received:', {
+        const crawledResponse = await response.json();
+        console.log('Crawled response received:', {
+            success: crawledResponse.success,
+            hasData: !!crawledResponse.data,
+            keys: Object.keys(crawledResponse)
+        });
+
+        // Extract the actual crawled data from the response
+        const crawledData = crawledResponse.data || crawledResponse;
+        console.log('Crawled data extracted:', {
             hasContent: !!crawledData.content,
             contentLength: crawledData.content?.length || 0,
             title: crawledData.title,
