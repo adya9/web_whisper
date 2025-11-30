@@ -33,11 +33,13 @@ CRAWL_SERVICE_URL=http://localhost:8000
 1. **Start ChromaDB server**:
    ```bash
    # Using Docker (recommended)
-   docker run -p 8000:8000 chromadb/chroma
+   docker run -d --name web-whisper-chromadb -p 8002:8000 -v chroma_data:/chroma/chroma -e IS_PERSISTENT=TRUE chromadb/chroma:latest
    
-   # Or using pip
-   pip install chromadb
-   chroma run --host 0.0.0.0 --port 8000
+   # Or use the batch file
+   start-chromadb-docker.bat
+   
+   # Check if it's running
+   docker ps --filter "name=web-whisper-chromadb"
    ```
 
 2. **Start your Next.js app**:

@@ -25,7 +25,18 @@ export async function POST(request: NextRequest) {
         });
 
         if (!response.ok) {
-            throw new Error(`Backend server responded with status: ${response.status}`);
+            // Try to get error details from the response
+            let errorMessage = `Backend server responded with status: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+                console.error('Crawler service error details:', errorData);
+            } catch (e) {
+                const errorText = await response.text();
+                console.error('Crawler service error text:', errorText);
+                errorMessage = errorText || errorMessage;
+            }
+            throw new Error(errorMessage);
         }
 
         const crawledResponse = await response.json();
@@ -75,21 +86,21 @@ export async function POST(request: NextRequest) {
 
                 // Store in database with enhanced metadata
                 console.log('Storing in database...');
-                const websiteId = await storeWebsiteData(
+                const storeResult = await storeWebsiteData(
                     url,
                     keyInfo.title || crawledData.title || 'Untitled',
                     keyInfo.description || crawledData.description || summary,
                     contentChunks
                 );
 
-                console.log(`Successfully stored ${contentChunks.length} content chunks for website ID: ${websiteId}`);
+                console.log(`Successfully stored ${storeResult.chunksStored} content chunks for website: ${url}`);
 
                 // Return enhanced data with AI-generated insights
                 return NextResponse.json({
                     ...crawledData,
                     stored: true,
-                    websiteId,
-                    chunksStored: contentChunks.length,
+                    websiteUrl: url,
+                    chunksStored: storeResult.chunksStored,
                     aiEnhanced: {
                         title: keyInfo.title,
                         description: keyInfo.description,
@@ -115,20 +126,20 @@ export async function POST(request: NextRequest) {
                         }
                     }];
 
-                    const websiteId = await storeWebsiteData(
+                    const fallbackResult = await storeWebsiteData(
                         url,
                         crawledData.title || 'Untitled',
                         crawledData.description || 'No description',
                         basicChunks
                     );
 
-                    console.log(`Fallback storage successful for website ID: ${websiteId}`);
+                    console.log(`Fallback storage successful for website: ${url}, chunks stored: ${fallbackResult.chunksStored}`);
 
                     return NextResponse.json({
                         ...crawledData,
                         stored: true,
-                        websiteId,
-                        chunksStored: basicChunks.length,
+                        websiteUrl: url,
+                        chunksStored: fallbackResult.chunksStored,
                         fallback: true,
                         processingError: processingError instanceof Error ? processingError.message : 'Unknown processing error',
                     });
