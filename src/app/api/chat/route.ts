@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchSimilarContent, checkCollectionData } from '@/lib/database-chroma';
-import { createQueryEmbedding } from '@/lib/embeddings';
 import { answerQuestion, generateVoiceResponse } from '@/lib/llm';
+import { searchSimilarContent, checkCollectionData } from '@/lib/database-milvus';
+import { createQueryEmbedding } from '@/lib/embeddings';
 
 // Handle CORS preflight
 export async function OPTIONS() {
@@ -116,8 +116,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract content text and sources
-    const contentTexts = relevantContent.map(item => item.content);
-    const sources = relevantContent.map(item => ({
+    interface SearchResult {
+      content: string;
+      url: string;
+      title: string;
+      similarity: number;
+      metadata: any;
+    }
+    const contentTexts = relevantContent.map((item: SearchResult) => item.content);
+    const sources = relevantContent.map((item: SearchResult) => ({
       url: item.url,
       title: item.title,
       similarity: item.similarity,

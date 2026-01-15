@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeDatabase, storeWebsiteData } from '@/lib/database-chroma';
 import { processContentForEmbeddings } from '@/lib/embeddings';
 import { extractKeyInfo, summarizeContent } from '@/lib/llm';
+import { initializeDatabase, storeWebsiteChunks } from '@/lib/database-milvus';
 
 export async function POST(request: NextRequest) {
     try {
@@ -84,9 +84,9 @@ export async function POST(request: NextRequest) {
                 );
                 console.log(`Generated ${contentChunks.length} content chunks`);
 
-                // Store in database with enhanced metadata
-                console.log('Storing in database...');
-                const storeResult = await storeWebsiteData(
+                // Store in Milvus database
+                console.log('Storing in Milvus database...');
+                const storeResult = await storeWebsiteChunks(
                     url,
                     keyInfo.title || crawledData.title || 'Untitled',
                     keyInfo.description || crawledData.description || summary,
@@ -112,42 +112,13 @@ export async function POST(request: NextRequest) {
             } catch (processingError) {
                 console.error('Error processing content:', processingError);
                 
-                // Fallback: store basic data without AI enhancement
-                try {
-                    console.log('Attempting fallback storage without AI processing...');
-                    const basicChunks = [{
-                        content: crawledData.content.substring(0, 1000), // Just take first 1000 chars
-                        embedding: new Array(768).fill(0), // Dummy embedding
-                        metadata: {
-                            sourceUrl: url,
-                            crawledAt: new Date().toISOString(),
-                            contentType: crawledData.contentType || 'text/html',
-                            fallback: true,
-                        }
-                    }];
-
-                    const fallbackResult = await storeWebsiteData(
-                        url,
-                        crawledData.title || 'Untitled',
-                        crawledData.description || 'No description',
-                        basicChunks
-                    );
-
-                    console.log(`Fallback storage successful for website: ${url}, chunks stored: ${fallbackResult.chunksStored}`);
-
-                    return NextResponse.json({
-                        ...crawledData,
-                        stored: true,
-                        websiteUrl: url,
-                        chunksStored: fallbackResult.chunksStored,
-                        fallback: true,
-                        processingError: processingError instanceof Error ? processingError.message : 'Unknown processing error',
-                    });
-
-                } catch (storageError) {
-                    console.error('Fallback storage also failed:', storageError);
-                    throw storageError;
-                }
+                // Return crawled data without AI processing
+                return NextResponse.json({
+                    ...crawledData,
+                    stored: false,
+                    websiteUrl: url,
+                    processingError: processingError instanceof Error ? processingError.message : 'Unknown processing error',
+                });
             }
         } else {
             console.log('No content found in crawled data, skipping storage');

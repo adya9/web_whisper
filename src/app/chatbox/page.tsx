@@ -72,8 +72,8 @@ export default function ChatBox() {
       const errorMessage: Message = {
         role: 'assistant',
         content: error instanceof Error 
-          ? `Sorry, I encountered an error: ${error.message}. Please check if ChromaDB is running and try again.`
-          : 'Sorry, I encountered an error. Please check if ChromaDB is running and try again.',
+          ? `Sorry, I encountered an error: ${error.message}. Please try again.`
+          : 'Sorry, I encountered an error. Please try again.',
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
