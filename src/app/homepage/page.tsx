@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Particles } from "@/components/ui/particles";
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
-import { Globe, Mic, Bot, ArrowRight, Zap } from "lucide-react";
+import { Globe, Mic, Bot, ArrowRight, Zap, MessageSquare } from "lucide-react";
+import Link from "next/link";
 
 export default function HomePage() {
     const [url, setUrl] = useState("");
@@ -174,23 +175,48 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        <Button
-                            onClick={startVoiceChat}
-                            disabled={isLoading || !url.trim()}
-                            className={cn(
-                                "bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 hover:from-purple-700 hover:via-blue-700 hover:to-green-700",
-                                "text-white font-semibold py-4 px-8 rounded-lg text-lg",
-                                "transition-all duration-200 transform hover:scale-105",
-                                "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
-                                "shadow-lg shadow-purple-500/25"
-                            )}
-                        >
-                            <div className="flex items-center space-x-2">
-                                <Mic className="w-5 h-5" />
-                                <span>Start Voice Chat</span>
-                                <ArrowRight className="w-5 h-5" />
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+                                <Button
+                                    onClick={startVoiceChat}
+                                    disabled={isLoading || !url.trim()}
+                                    className={cn(
+                                        "bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 hover:from-purple-700 hover:via-blue-700 hover:to-green-700",
+                                        "text-white font-semibold py-4 px-8 rounded-lg text-lg",
+                                        "transition-all duration-200 transform hover:scale-105",
+                                        "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+                                        "shadow-lg shadow-purple-500/25 w-full sm:w-auto"
+                                    )}
+                                >
+                                    <div className="flex items-center space-x-2">
+                                        <Mic className="w-5 h-5" />
+                                        <span>Start Voice Chat</span>
+                                        <ArrowRight className="w-5 h-5" />
+                                    </div>
+                                </Button>
+
+                                <Link href="/chatbox">
+                                    <Button
+                                        disabled={isLoading}
+                                        className={cn(
+                                            "bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50",
+                                            "text-white font-semibold py-4 px-8 rounded-lg text-lg",
+                                            "transition-all duration-200 transform hover:scale-105",
+                                            "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+                                            "backdrop-blur-sm shadow-lg w-full sm:w-auto"
+                                        )}
+                                    >
+                                        <div className="flex items-center space-x-2">
+                                            <MessageSquare className="w-5 h-5" />
+                                            <span>Go to Chatbox</span>
+                                        </div>
+                                    </Button>
+                                </Link>
                             </div>
-                        </Button>
+                            <p className="text-sm text-slate-400 text-center">
+                                Or <span className="text-slate-300 font-medium">go directly to chatbox</span> to talk about already crawled content
+                            </p>
+                        </div>
                     </div>
 
                     {/* Features */}

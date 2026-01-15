@@ -203,6 +203,63 @@ export async function POST(request: NextRequest) {
     query = cleanQuery(query);
     console.log(`Vapi knowledge base query (cleaned): "${query}"`);
 
+    // Extract key terms from the query for better search
+    // Focus on names, important nouns, and key phrases
+    function extractKeyTerms(text: string): string {
+      // Remove common stop words but keep important terms
+      const stopWords = new Set([
+        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+        'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be', 
+        'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 
+        'would', 'should', 'could', 'may', 'might', 'must', 'can', 'this', 
+        'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
+        'what', 'where', 'when', 'why', 'how', 'tell', 'me', 'about', 'am',
+        'not', 'no', 'yes', 'yeah', 'um', 'uh'
+      ]);
+      
+      // First, try to extract capitalized names (proper nouns) - these are usually important
+      const capitalizedWords = text.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
+      
+      // Then get other important words
+      const words = text.toLowerCase()
+        .replace(/[^\w\s]/g, ' ') // Remove punctuation
+        .split(/\s+/)
+        .filter(word => word.length > 2 && !stopWords.has(word));
+      
+      // Combine capitalized names (which are likely important) with other key terms
+      const allTerms = [
+        ...capitalizedWords.map(w => w.toLowerCase()), // Add names
+        ...words // Add other important words
+      ];
+      
+      // Remove duplicates and return top terms
+      const uniqueTerms = Array.from(new Set(allTerms));
+      
+      // Prioritize longer terms and return top 8-10 terms for better coverage
+      return uniqueTerms
+        .sort((a, b) => b.length - a.length) // Longer words first
+        .slice(0, 10) // Top 10 key terms for better search coverage
+        .join(' ');
+    }
+
+    // Create a focused search query from key terms
+    // BUT: If query contains a name (capitalized words) or is short, use original query
+    const hasName = /[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/.test(query); // Detects multi-word capitalized names
+    const isShortQuery = query.split(/\s+/).length <= 5; // Short queries (5 words or less)
+    
+    let searchQuery: string;
+    if (hasName || isShortQuery) {
+      // For queries with names or short queries, use the original query
+      // Key term extraction might remove important context
+      searchQuery = query;
+      console.log(`Using original query (contains name or is short): "${searchQuery}"`);
+    } else {
+      // For longer queries, extract key terms to focus the search
+      const keyTerms = extractKeyTerms(query);
+      searchQuery = keyTerms || query;
+      console.log(`Extracted key terms for search: "${searchQuery}"`);
+    }
+
     // Skip very short queries (less than 2 characters) - they won't match anything useful
     if (query.trim().length < 2) {
       console.log(`Query "${query}" is too short, returning empty documents`);
@@ -216,38 +273,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ documents: [] });
     }
 
-    // Generate embedding for the query
+    // Generate embedding for the search query (use key terms if available, otherwise original query)
     let queryEmbedding: number[];
     try {
-      queryEmbedding = await createQueryEmbedding(query);
-      console.log(`Query embedding generated: ${queryEmbedding.length} dimensions`);
+      // Use the focused search query (key terms) for better semantic matching
+      queryEmbedding = await createQueryEmbedding(searchQuery);
+      console.log(`Query embedding generated from "${searchQuery}": ${queryEmbedding.length} dimensions`);
     } catch (error) {
       console.error('Error generating query embedding:', error);
       return NextResponse.json({ documents: [] });
     }
 
     // Search Milvus for relevant content
-    // Use a very permissive threshold (-1.0) since L2 distances > 1 result in negative similarities
-    // The search function will return top results anyway if threshold filtering removes everything
+    // Use a more reasonable threshold (0.2) to match chat endpoint behavior
+    // This will filter out very poor matches while still allowing negative similarities
+    // Increase maxResults significantly to get more candidates, especially for name searches
+    const maxSearchResults = hasName ? 15 : 10; // More results for name searches
     const relevantContent = await searchSimilarContent(
       queryEmbedding,
-      5, // maxResults: Vapi typically expects 3-5 documents
-      -1.0 // similarityThreshold: very permissive to allow negative similarities from L2 distance
+      maxSearchResults, // Get more candidates to find better matches
+      0.2 // similarityThreshold: Match chat endpoint threshold for consistency
     );
 
     console.log(`Found ${relevantContent.length} relevant documents for Vapi`);
 
+    // Sort by similarity (highest first) and take top documents for Vapi
+    // Return more documents for name searches to increase chances of finding the person
+    const topCount = hasName ? 7 : 5; // More documents for name searches
+    const topDocuments = relevantContent
+      .sort((a: any, b: any) => (b.similarity || 0) - (a.similarity || 0))
+      .slice(0, topCount);
+
+    console.log(`Returning top ${topDocuments.length} documents to Vapi (sorted by similarity, hasName: ${hasName})`);
+
     // Format results for Vapi
-    const documents = relevantContent.map((item: any, index: number) => {
-      const content = item.content || '';
+    // Include title and URL in content for better context (helps LLM understand the source)
+    const documents = topDocuments.map((item: any, index: number) => {
+      const baseContent = item.content || '';
+      const title = item.title || item.metadata?.title || '';
+      const url = item.url || item.metadata?.url || '';
+      
+      // Enhance content with title and URL context for better LLM understanding
+      let enhancedContent = baseContent;
+      if (title) {
+        enhancedContent = `[From: ${title}]\n${enhancedContent}`;
+      }
+      if (url && !enhancedContent.includes(url)) {
+        enhancedContent = `${enhancedContent}\n[Source: ${url}]`;
+      }
+      
       const doc = {
-        content: content,
+        content: enhancedContent,
         similarity: item.similarity || 0,
-        uuid: item.metadata?.id?.toString() || item.url || undefined,
+        uuid: item.metadata?.id?.toString() || url || undefined,
       };
       
       // Log each document being sent (first 200 chars of content)
-      console.log(`  Document ${index + 1}: similarity=${doc.similarity.toFixed(3)}, content_length=${content.length}, preview="${content.substring(0, 200)}..."`);
+      console.log(`  Document ${index + 1}: similarity=${doc.similarity.toFixed(3)}, content_length=${enhancedContent.length}, title="${title}", preview="${enhancedContent.substring(0, 200)}..."`);
       
       return doc;
     });
